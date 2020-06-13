@@ -169,6 +169,24 @@ namespace S3.AutoBatcher.UnitTests
 			}
 		}
 
+		[Test]
+		public async Task EnlistedItemsShowsCorrectCount()
+		{
+			const int itemsCount = 100;
+			Assert.AreEqual(0, _context.Sut.EnlistedItems.Count);
+			using (var token = _context.Sut.NewBatchAggregatorToken())
+			{
+				for (var i = 0; i < itemsCount; i++)
+				{
+					_context.Sut.Add(i.ToString(), token);
+				}
+				
+				Assert.AreEqual(itemsCount,_context.Sut.EnlistedItems.Count);
+				await _context.Sut.AddingItemsToBatchCompleted(token);
+				Assert.AreEqual(0, _context.Sut.EnlistedItems.Count);
+			}
+		}
+
 
 		private class TestContext
 		{
