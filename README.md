@@ -1,2 +1,2 @@
 # AutoBatcher
-A library to autobatch tasks transparently fromt he client code
+A library to autobatch tasks transparently from the client code
