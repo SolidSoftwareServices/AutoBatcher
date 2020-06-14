@@ -56,7 +56,7 @@ jobs:
       with:
         dotnet-version: 3.1.101
     
-    - name: Output values
+    - name: Dump version values
       run: |
         echo "Run ID: ${{ github.run_id }}""
         echo "Output Run Number: ${{ github.run_number }}"" 
@@ -119,4 +119,4 @@ jobs:
       env:
         nuget_api_key: ${{ secrets.NUGET_API_KEY }}
       working-directory: ./src/S3.AutoBatcher/nupkg
-      if: ${{ github.event_name != 'pull_request' && (steps.gitversion.outputs.Major>0 || steps.gitversion.outputs.Minor>0) }}
+      if: ${{ github.event_name != 'pull_request' && github.ref!='refs/heads/master' && (steps.gitversion.outputs.Major>0 || steps.gitversion.outputs.Minor>0) }}
