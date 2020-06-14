@@ -3,9 +3,9 @@ env:
   solutionFile: 'S3.AutoBatcher.sln'
 on:
   push:
-    branches: [master, 'features/**', 'releases/**' ]
+    branches: [master, 'releases/**' ]
   pull_request:
-    branches: [master, 'features/**', 'releases/**' ]
+    branches: [master, 'releases/**' ]
 
 jobs:
   run_build:
