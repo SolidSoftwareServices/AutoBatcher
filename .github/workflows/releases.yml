@@ -97,6 +97,7 @@ jobs:
         version: "${{steps.gitversion.outputs.Major}}.${{steps.gitversion.outputs.Minor}}.${{steps.gitversion.outputs.BuildMetaData}}"
         assemblyVersion: "${{steps.gitversion.outputs.Major}}.${{steps.gitversion.outputs.Minor}}.${{steps.gitversion.outputs.BuildMetaData}}.0"
         fileVersion: "${{steps.gitversion.outputs.Major}}.${{steps.gitversion.outputs.Minor}}.${{steps.gitversion.outputs.BuildMetaData}}"
+      if: ${{ github.event_name != 'pull_request' && github.ref!='refs/heads/master' && (steps.gitversion.outputs.Major>0 || steps.gitversion.outputs.Minor>0) }}
 
     - name: Install dependencies
       run: dotnet restore ${{env.solutionFile}}
