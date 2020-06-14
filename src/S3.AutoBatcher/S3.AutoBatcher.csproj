@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ILRepack.Lib.MSBuild.Task" Version="2.0.18.1" PrivateAssets="All" />
+    <PackageReference Include="ILRepack.MSBuild.Task" Version="2.0.13" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,8 +33,8 @@
 			<InputAssemblies Include="S3.dll" />
 		</ItemGroup>
 		<ItemGroup>
-			<!-- Dot not internalize any types inside this assembly -->
-			<!--<InternalizeExcludeAssemblies Include="S3.dll" />-->
+			 <!--Dot not internalize any types inside this assembly 
+			<InternalizeExcludeAssemblies Include="S3.dll" />-->
 			<InternalizeExcludeAssemblies />
 		</ItemGroup>
 		<Message Text="MERGING: @(InputAssemblies->'%(Filename)') into $(OutputAssembly)" Importance="High" />
