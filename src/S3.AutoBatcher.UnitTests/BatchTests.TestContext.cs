@@ -21,12 +21,13 @@ namespace S3.AutoBatcher.UnitTests
 			public ConcurrentBag<string> ExecutedRequests { get; } = new ConcurrentBag<string>();
 			public Batch<string> Sut => _sut ??= BuildSut();
 
-			private async Task OnExecute(IReadOnlyCollection<string> items, CancellationToken cancellationToken)
+			private Task OnExecute(IReadOnlyCollection<string> items, CancellationToken cancellationToken)
 			{
 				foreach (var request in items) ExecutedRequests.Add(request);
 				Interlocked.Increment(ref ExecutionCount);
 
 				BatchExecutedEvent.Set();
+				return Task.CompletedTask;
 			}
 
 			private Batch<string> BuildSut()

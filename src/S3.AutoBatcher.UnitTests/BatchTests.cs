@@ -76,7 +76,10 @@ namespace S3.AutoBatcher.UnitTests
 			mre.Set();
 			await Task.WhenAll(tasks);
 
-			if (!context.BatchExecutedEvent.WaitOne(TimeSpan.FromSeconds(5))) Assert.Fail("Execute was not completed");
+			if (!context.BatchExecutedEvent.WaitOne(TimeSpan.FromSeconds(90)))
+			{
+				Assert.Fail("Execute was not completed");
+			}
 			ThrowIfAnyFaulted();
 
 			var items = Enumerable.Range(0, itemsCount - 1);
@@ -106,7 +109,7 @@ namespace S3.AutoBatcher.UnitTests
 		}
 
 		[Test]
-		public async Task CannotAddAfterTokenDispose()
+		public void CannotAddAfterTokenDispose()
 		{
 			var context = new TestContext();
 			var value = Guid.NewGuid().ToString();
@@ -117,7 +120,7 @@ namespace S3.AutoBatcher.UnitTests
 
 
 		[Test]
-		public async Task CannotCompleteAfterTokenDispose()
+		public void CannotCompleteAfterTokenDispose()
 		{
 			var context = new TestContext();
 			var value = Guid.NewGuid().ToString();

@@ -11,7 +11,7 @@ namespace S3.AutoBatcher
 	public sealed class Batch<TBatchItem>: IBatch<TBatchItem> where TBatchItem : class
 	{
 		public string Id { get; }
-		public TimeSpan EnlistAwaitTimeout { get; protected set; }
+		public TimeSpan EnlistAwaitTimeout { get; }
 		private readonly HashSet<BatchAggregatorToken<TBatchItem>> _currentBatchAggregators =
 			new HashSet<BatchAggregatorToken<TBatchItem>>();
 
