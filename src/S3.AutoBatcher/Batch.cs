@@ -8,7 +8,7 @@ using S3.Threading;
 
 namespace S3.AutoBatcher
 {
-	public sealed class Batch<TBatchItem>: IBatch<TBatchItem> where TBatchItem : class
+	public sealed class Batch<TBatchItem>: IBatch<TBatchItem> 
 	{
 		private readonly IBatchChunkProcessor<TBatchItem> _batchChunkProcessor;
 		public string Id { get; }
@@ -17,6 +17,7 @@ namespace S3.AutoBatcher
 			new HashSet<BatchAggregatorToken<TBatchItem>>();
 
 		private readonly ManualResetEventAsync _resetEvent = new ManualResetEventAsync(false);
+		private readonly ManualResetEventAsync _allowItemsEvent = new ManualResetEventAsync(true);
 		private readonly object _syncLock = new object();
 		private readonly CancellationTokenSource _cts = new CancellationTokenSource();
 		private ConcurrentBag<TBatchItem> _items=new ConcurrentBag<TBatchItem>();
@@ -32,13 +33,17 @@ namespace S3.AutoBatcher
 		}
 		private Guid _lastOperation = Guid.NewGuid();
 
-		public void Add(TBatchItem item,BatchAggregatorToken<TBatchItem> token)
+		public async Task Add(TBatchItem item,BatchAggregatorToken<TBatchItem> token, bool willAddMoreItemsWithThisToken = true)
 		{
 			ThrowIfInvalidToken(token);
-			ThrowIfNoMoreRequestAllowed();
+			if(!await _allowItemsEvent.WaitAsync(_cts.Token)) throw new TaskCanceledException();
 			
 			_items.Add(item);
 			_lastOperation = Guid.NewGuid();
+			if (!willAddMoreItemsWithThisToken)
+			{
+				await AddingItemsToBatchCompleted(token);
+			}
 		}
 
 		
@@ -47,12 +52,12 @@ namespace S3.AutoBatcher
 		/// Several concurrent callers can contribute to the batch each one of them must hold a token
 		/// </summary>
 		/// <returns></returns>
-		public BatchAggregatorToken<TBatchItem> NewBatchAggregatorToken()
+		public async Task<BatchAggregatorToken<TBatchItem>> NewBatchAggregatorToken()
 		{
 			var token = new BatchAggregatorToken<TBatchItem>(this);
+			if (!await _allowItemsEvent.WaitAsync(_cts.Token)) throw new TaskCanceledException();
 			lock (_syncLock)
 			{
-				ThrowIfNoMoreRequestAllowed();
 				_currentBatchAggregators.Add(token);
 			}
 			
@@ -68,16 +73,16 @@ namespace S3.AutoBatcher
 
 			bool executeBatch;
 			Task awaitForTask;
-
+			
 			lock (_syncLock)
 			{
-				ThrowIfNoMoreRequestAllowed();
 				ThrowIfInvalidToken(token);
 
 				_currentBatchAggregators.Remove(token);
 				executeBatch = !_currentBatchAggregators.Any();
 				if (executeBatch)
 				{
+					_allowItemsEvent.Reset();
 					Status = BatchStatus.Executing;
 					awaitForTask = _batchChunkProcessor.Process(_items, _cts.Token);
 
@@ -85,14 +90,15 @@ namespace S3.AutoBatcher
 				else
 					awaitForTask = _resetEvent.WaitAsync(_cts.Token);
 			}
+			
 			await awaitForTask;
 			if (executeBatch)
 			{
 				_items=new ConcurrentBag<TBatchItem>();
-				Status = BatchStatus.Executed;
-
+				Status = BatchStatus.Opened;
+				_allowItemsEvent.Set();
 				_resetEvent.Set();
-
+				_resetEvent.Reset();
 			}
 
 			async Task AwaitEnlistersUntilNoMoreEnlist()
@@ -120,12 +126,7 @@ namespace S3.AutoBatcher
 			if (!_currentBatchAggregators.Contains(token))
 				throw new InvalidOperationException("The aggregator is not part of the current batch");
 		}
-		private void ThrowIfNoMoreRequestAllowed()
-		{
-			if (Status != BatchStatus.Opened)
-				throw new InvalidOperationException($"The batch status is not opened. Status:{Status}");
-		}
-
+		
 		public void Dispose()
 		{
 			_cts.Cancel(false);

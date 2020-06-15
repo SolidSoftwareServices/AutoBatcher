@@ -32,13 +32,13 @@ namespace S3.Threading
 			}
 		}
 
-		public Task WaitAsync()
+		public Task<bool> WaitAsync()
 		{
 			return this.AwaitCompletion(ManualResetEventAsync.WaitIndefinitely, default(CancellationToken));
 		}
 
 
-		public Task WaitAsync(CancellationToken token)
+		public Task<bool> WaitAsync(CancellationToken token)
 		{
 			return this.AwaitCompletion(ManualResetEventAsync.WaitIndefinitely, token);
 		}

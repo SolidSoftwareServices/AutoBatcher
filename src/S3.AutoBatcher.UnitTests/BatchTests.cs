@@ -18,9 +18,9 @@ namespace S3.AutoBatcher.UnitTests
 		{
 			var context = new TestContext();
 			var value = Guid.NewGuid().ToString();
-			using (var token = context.Sut.NewBatchAggregatorToken())
+			using (var token =  await context.Sut.NewBatchAggregatorToken())
 			{
-				context.Sut.Add(value, token);
+				await context.Sut.Add(value, token);
 				Thread.Sleep(10);
 				Assert.IsEmpty(context.ExecutedRequests);
 				await context.Sut.AddingItemsToBatchCompleted(token);
@@ -33,9 +33,9 @@ namespace S3.AutoBatcher.UnitTests
 		{
 			var context = new TestContext();
 			var itemsCount = 10000;
-			using (var token = context.Sut.NewBatchAggregatorToken())
+			using (var token =  await context.Sut.NewBatchAggregatorToken())
 			{
-				for (var i = 0; i < itemsCount; i++) context.Sut.Add(i.ToString(), token);
+				for (var i = 0; i < itemsCount; i++) await context.Sut.Add(i.ToString(), token);
 				Assert.IsEmpty(context.ExecutedRequests);
 				await context.Sut.AddingItemsToBatchCompleted(token);
 			}
@@ -62,10 +62,10 @@ namespace S3.AutoBatcher.UnitTests
 				var idx = i;
 				var t = Task.Factory.StartNew(async () =>
 				{
-					using (var token = sut.NewBatchAggregatorToken())
+					using (var token = await sut.NewBatchAggregatorToken())
 					{
 						mre.WaitOne();
-						sut.Add(idx.ToString(), token);
+						await sut.Add(idx.ToString(), token);
 						Assert.IsEmpty(context.ExecutedRequests);
 						await sut.AddingItemsToBatchCompleted(token);
 					}
@@ -101,7 +101,7 @@ namespace S3.AutoBatcher.UnitTests
 		public async Task CanCompleteWhenNoItems()
 		{
 			var context = new TestContext();
-			using (var token = context.Sut.NewBatchAggregatorToken())
+			using (var token =  await context.Sut.NewBatchAggregatorToken())
 			{
 				await context.Sut.AddingItemsToBatchCompleted(token);
 				Assert.IsEmpty(context.ExecutedRequests);
@@ -109,23 +109,23 @@ namespace S3.AutoBatcher.UnitTests
 		}
 
 		[Test]
-		public void CannotAddAfterTokenDispose()
+		public async Task CannotAddAfterTokenDispose()
 		{
 			var context = new TestContext();
 			var value = Guid.NewGuid().ToString();
-			var token = context.Sut.NewBatchAggregatorToken();
+			var token =  await context.Sut.NewBatchAggregatorToken();
 			token.Dispose();
-			Assert.Throws<ObjectDisposedException>(() => context.Sut.Add(value, token));
+			Assert.ThrowsAsync<ObjectDisposedException>(async() => await context.Sut.Add(value, token));
 		}
 
 
 		[Test]
-		public void CannotCompleteAfterTokenDispose()
+		public async Task CannotCompleteAfterTokenDispose()
 		{
 			var context = new TestContext();
 			var value = Guid.NewGuid().ToString();
-			var token = context.Sut.NewBatchAggregatorToken();
-			context.Sut.Add(value, token);
+			var token =  await context.Sut.NewBatchAggregatorToken();
+			await context.Sut.Add(value, token);
 			token.Dispose();
 			Assert.ThrowsAsync<ObjectDisposedException>(
 				async () => await context.Sut.AddingItemsToBatchCompleted(token));
@@ -133,18 +133,32 @@ namespace S3.AutoBatcher.UnitTests
 
 
 		[Test]
-		public async Task CannotReuseCompletedBatch()
+		public async Task BatchAcceptsRequestAfterAggregatorsCompleted()
 		{
+			var v1 = Guid.NewGuid().ToString();
+			var v2 = Guid.NewGuid().ToString();
+
 			var context = new TestContext();
-			using (var token = context.Sut.NewBatchAggregatorToken())
+			using (var token =  await context.Sut.NewBatchAggregatorToken())
 			{
-				var v1 = Guid.NewGuid().ToString();
-				context.Sut.Add(v1, token);
+
+				await context.Sut.Add(v1, token);
 
 				await context.Sut.AddingItemsToBatchCompleted(token);
-				var v2 = Guid.NewGuid().ToString();
-				Assert.Throws<InvalidOperationException>(() => context.Sut.Add(v2, token));
 			}
+
+			using (var token =  await context.Sut.NewBatchAggregatorToken())
+			{
+				await context.Sut.Add(v2, token);
+
+				await context.Sut.AddingItemsToBatchCompleted(token);
+			}
+
+			var actual = context.ExecutedRequests.ToArray();
+			Assert.AreEqual(2,actual.Length);
+			Assert.IsTrue(actual.Contains(v1));
+			Assert.IsTrue(actual.Contains(v2));
+
 		}
 
 		[Test]
@@ -153,9 +167,9 @@ namespace S3.AutoBatcher.UnitTests
 			var context = new TestContext();
 			const int itemsCount = 100;
 			Assert.AreEqual(0, context.Sut.EnlistedItems.Count);
-			using (var token = context.Sut.NewBatchAggregatorToken())
+			using (var token =  await context.Sut.NewBatchAggregatorToken())
 			{
-				for (var i = 0; i < itemsCount; i++) context.Sut.Add(i.ToString(), token);
+				for (var i = 0; i < itemsCount; i++) await context.Sut.Add(i.ToString(), token);
 
 				Assert.AreEqual(itemsCount, context.Sut.EnlistedItems.Count);
 				await context.Sut.AddingItemsToBatchCompleted(token);
@@ -168,9 +182,9 @@ namespace S3.AutoBatcher.UnitTests
 		{
 			var context = new TestContext();
 			var value = Guid.NewGuid().ToString();
-			using (var token = context.Sut.NewBatchAggregatorToken())
+			using (var token =  await context.Sut.NewBatchAggregatorToken())
 			{
-				context.Sut.Add(value, token);
+				await context.Sut.Add(value, token);
 				Thread.Sleep(10);
 				Assert.IsEmpty(context.ExecutedRequests);
 				await context.Sut.AddingItemsToBatchCompleted(token);
