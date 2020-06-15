@@ -1,0 +1,9 @@
+{
+  "profiles": {
+
+    "RunSample_SimpleProducer": {
+        "commandName": "Project",
+        "commandLineArgs": "--run Producer_BatchCollectionByIdleTime"
+    }
+  }
+}

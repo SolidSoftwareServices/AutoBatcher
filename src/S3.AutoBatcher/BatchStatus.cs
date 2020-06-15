@@ -11,10 +11,6 @@
 		/// </summary>
 		/// <remarks>it does not admit requests</remarks>
 		Executing,
-		/// <summary>
-		/// It ewas executed
-		/// </summary>
-		/// <remarks>it does not admit requests</remarks>
-		Executed
+		
 	}
 }

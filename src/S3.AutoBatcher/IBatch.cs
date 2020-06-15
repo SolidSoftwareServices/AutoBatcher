@@ -10,13 +10,14 @@ namespace S3.AutoBatcher
 		/// </summary>
 		/// <param name="item"></param>
 		/// <param name="token"></param>
-		void Add(TBatchItem item, BatchAggregatorToken<TBatchItem> token);
+		/// <param name="willAddMoreItemsWithThisToken">When false it completes implicitly <see cref="AddingItemsToBatchCompleted"/> </param>
+		Task Add(TBatchItem item, BatchAggregatorToken<TBatchItem> token,bool willAddMoreItemsWithThisToken=true);
 
 		/// <summary>
 		/// Obtains a token to contribute to the batch
 		/// </summary>
 		/// <returns></returns>
-		BatchAggregatorToken<TBatchItem> NewBatchAggregatorToken();
+		Task<BatchAggregatorToken<TBatchItem>> NewBatchAggregatorToken();
 
 		/// <summary>
 		/// Notifies the batch the producer holding the token has finalised
