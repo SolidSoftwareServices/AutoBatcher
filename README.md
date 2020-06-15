@@ -28,45 +28,45 @@ S3.Autobatcher is an utility to process **"chunks of items"** of an specified si
 Simplest possible example of publishing `int` items  to the `Batch`.  :
 
 ```csharp
-    ...
-    //batch configuration
-	var batchConfiguration = new BatchConfiguration<int>
-	{
-	    //Time window before the current batch chuck collected is executed
-		AddMoreItemsTimeWindow = TimeSpan.FromSeconds(3.0)
-	};
-    //Create batch
-    var batchCollector = new Batch<int>(batchConfiguration, new BatchChunkProcessor());
+...
+//batch configuration
+var batchConfiguration = new BatchConfiguration<int>
+{
+    //Time window before the current batch chuck collected is executed
+    AddMoreItemsTimeWindow = TimeSpan.FromSeconds(3.0)
+};
+//Create batch
+var batchCollector = new Batch<int>(batchConfiguration, new BatchChunkProcessor());
 
-    //obtain a producer token that allows aggregation of items to the batch, there can be more than one concurrent aggregators. Not represented in this example 
-    //new aggregator
-    using (var token = await batchCollector.NewBatchAggregatorToken())
+//obtain a producer token that allows aggregation of items to the batch, there can be more than one concurrent aggregators. Not represented in this example 
+//new aggregator
+using (var token = await batchCollector.NewBatchAggregatorToken())
+{
+    //add items until the user cancels
+    while (!_cancellationTokenSource.Token.IsCancellationRequested)
     {
-        //add items until the user cancels
-        while (!_cancellationTokenSource.Token.IsCancellationRequested)
-        {
-           	var item = rnd.Next(0, 25);
-			await batchCollector.Add(item, token);
-        }
-        //notify the batch that this aggregator is done adding items
-        await batchCollector.AddingItemsToBatchCompleted(token);
+        var item = rnd.Next(0, 25);
+        await batchCollector.Add(item, token);
     }
-    ...
+    //notify the batch that this aggregator is done adding items
+    await batchCollector.AddingItemsToBatchCompleted(token);
+}
+...
 ```
 
 Simplest possible example of a processor of batch chunks where you can define the payload to execute for each chunk: send request, compute,...
 
 ```csharp
-	class BatchChunkProcessor : IBatchChunkProcessor<int>
-	{
-		private int _batchNumber = 0;
-		public Task Process(IReadOnlyCollection<int> chunkItems, CancellationToken cancellationToken)
-		{
-			Console.WriteLine($"Batch #{++_batchNumber}, items processed:",Color.DarkGreen);
-			//prints the items comma-separated
-			var current = string.Join(',', chunkItems);
-			Console.WriteLine(current,Color.Olive);
-			return Task.CompletedTask;
-		}
+class BatchChunkProcessor : IBatchChunkProcessor<int>
+{
+    private int _batchNumber = 0;
+    public Task Process(IReadOnlyCollection<int> chunkItems, CancellationToken cancellationToken)
+    {
+        Console.WriteLine($"Batch #{++_batchNumber}, items processed:",Color.DarkGreen);
+        //prints the items comma-separated
+        var current = string.Join(',', chunkItems);
+        Console.WriteLine(current,Color.Olive);
+        return Task.CompletedTask;
+    }
 }
 ```
