@@ -91,6 +91,7 @@ jobs:
         echo "CommitsSinceVersionSourcePadded: ${{ steps.gitversion.outputs.CommitsSinceVersionSourcePadded }}"
         echo "CommitDate: ${{ steps.gitversion.outputs.CommitDate }}"
     
+        
     - name: Update project version
       uses: roryprimrose/set-vs-sdk-project-version@v1
       with:
