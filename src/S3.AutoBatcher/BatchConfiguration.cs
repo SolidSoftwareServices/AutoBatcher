@@ -15,6 +15,6 @@ namespace S3.AutoBatcher
 		/// </summary>
 		public TimeSpan AddMoreItemsTimeWindow { get; set; } = TimeSpan.Zero;
 
-		
+		public int ChunkSize { get; set; } = 0;
 	}
 }

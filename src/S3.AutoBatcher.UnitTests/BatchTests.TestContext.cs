@@ -17,7 +17,10 @@ namespace S3.AutoBatcher.UnitTests
 
 
 
-			public ConcurrentBag<string> ExecutedRequests { get; } = new ConcurrentBag<string>();
+			
+			private readonly List<ConcurrentBag<string>> _chunks=new List<ConcurrentBag<string>>();
+			private int _batchSize;
+			public IReadOnlyList<ConcurrentBag<string>> ExecutedChunks => _chunks;
 			public Batch<string> Sut => _sut ??= BuildSut();
 
 
@@ -25,7 +28,8 @@ namespace S3.AutoBatcher.UnitTests
 			{
 				return new Batch<string>(new BatchConfiguration<string>
 				{
-					AddMoreItemsTimeWindow = _enlistAwaitTimeout
+					AddMoreItemsTimeWindow = _enlistAwaitTimeout,
+					ChunkSize=_batchSize
 				},this);
 			}
 
@@ -37,10 +41,25 @@ namespace S3.AutoBatcher.UnitTests
 
 			public Task Process(IReadOnlyCollection<string> chunkItems, CancellationToken cancellationToken)
 			{
-				foreach (var request in chunkItems) ExecutedRequests.Add(request);
+				if (chunkItems.Count > 0)
+				{
+					var current = new ConcurrentBag<string>();
+					_chunks.Add(current);
+					foreach (var request in chunkItems)
+					{
+						current.Add(request);
+					}
+				}
 
 				BatchExecutedEvent.Set();
+				BatchExecutedEvent.Reset();
 				return Task.CompletedTask;
+			}
+
+			public TestContext WithBatchSize(int batchSize)
+			{
+				_batchSize = batchSize;
+				return this;
 			}
 		}
 

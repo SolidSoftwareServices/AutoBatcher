@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -22,9 +23,9 @@ namespace S3.AutoBatcher.UnitTests
 			{
 				await context.Sut.Add(value, token);
 				Thread.Sleep(10);
-				Assert.IsEmpty(context.ExecutedRequests);
+				Assert.IsEmpty(context.ExecutedChunks);
 				await context.Sut.AddingItemsToBatchCompleted(token);
-				Assert.IsTrue(context.ExecutedRequests.Single() == value);
+				Assert.IsTrue(context.ExecutedChunks.Single().Single() == value);
 			}
 		}
 
@@ -36,14 +37,15 @@ namespace S3.AutoBatcher.UnitTests
 			using (var token =  await context.Sut.NewBatchAggregatorToken())
 			{
 				for (var i = 0; i < itemsCount; i++) await context.Sut.Add(i.ToString(), token);
-				Assert.IsEmpty(context.ExecutedRequests);
+				Assert.IsEmpty(context.ExecutedChunks);
 				await context.Sut.AddingItemsToBatchCompleted(token);
 			}
 
+			var chunk = context.ExecutedChunks.Single();
 			var items = Enumerable.Range(0, itemsCount - 1);
 			foreach (var item in items)
 			{
-				var count = context.ExecutedRequests.Count(y => y == item.ToString());
+				var count = chunk.Count(y => y == item.ToString());
 				Assert.IsTrue(count == 1, $"Item number{item} count={count}");
 			}
 		}
@@ -66,7 +68,7 @@ namespace S3.AutoBatcher.UnitTests
 					{
 						mre.WaitOne();
 						await sut.Add(idx.ToString(), token);
-						Assert.IsEmpty(context.ExecutedRequests);
+						Assert.IsEmpty(context.ExecutedChunks);
 						await sut.AddingItemsToBatchCompleted(token);
 					}
 				});
@@ -81,11 +83,11 @@ namespace S3.AutoBatcher.UnitTests
 				Assert.Fail("Execute was not completed");
 			}
 			ThrowIfAnyFaulted();
-
+			var chunk = context.ExecutedChunks.Single();
 			var items = Enumerable.Range(0, itemsCount - 1);
 			foreach (var item in items)
 			{
-				var count = context.ExecutedRequests.Count(y => y == item.ToString());
+				var count = chunk.Count(y => y == item.ToString());
 				Assert.IsTrue(count == 1, $"Item number{item} count={count}");
 			}
 
@@ -104,8 +106,9 @@ namespace S3.AutoBatcher.UnitTests
 			using (var token =  await context.Sut.NewBatchAggregatorToken())
 			{
 				await context.Sut.AddingItemsToBatchCompleted(token);
-				Assert.IsEmpty(context.ExecutedRequests);
 			}
+			Assert.AreEqual(0,context.ExecutedChunks.Count);
+
 		}
 
 		[Test]
@@ -154,12 +157,42 @@ namespace S3.AutoBatcher.UnitTests
 				await context.Sut.AddingItemsToBatchCompleted(token);
 			}
 
-			var actual = context.ExecutedRequests.ToArray();
-			Assert.AreEqual(2,actual.Length);
-			Assert.IsTrue(actual.Contains(v1));
-			Assert.IsTrue(actual.Contains(v2));
+			Assert.AreEqual(2, context.ExecutedChunks.Count);
+			var actualJoin = context.ExecutedChunks.SelectMany(x=>x).Distinct().ToArray();
+			Assert.AreEqual(2, actualJoin.Length);
+			Assert.IsTrue(actualJoin.Contains(v1));
+			Assert.IsTrue(actualJoin.Contains(v2));
 
 		}
+		[TestCase(50, 0)]
+		[TestCase(50,10)]
+		[TestCase(52, 10)]
+		public async Task CanAutoProcessBatchChunk(int numItemsToPublish,int batchSize)
+		{
+			
+			var context = new TestContext().WithBatchSize(batchSize);
+			var expected=new List<string>();
+			using (var token = await context.Sut.NewBatchAggregatorToken())
+			{
+				for (int i = 0; i < numItemsToPublish;i++)
+				{
+					var item = Guid.NewGuid().ToString();
+					
+					await context.Sut.Add(item, token);
+					expected.Add(item);
+				}
+
+				await context.Sut.AddingItemsToBatchCompleted(token);
+			}
+			Assert.AreEqual(batchSize==0?1:(int)Math.Ceiling((numItemsToPublish / (double)batchSize)),context.ExecutedChunks.Count);
+
+
+			var joinedActual = context.ExecutedChunks.SelectMany(x=>x).ToArray();
+			Assert.AreEqual(numItemsToPublish, joinedActual.Length);
+			
+			Assert.IsTrue(expected.All(joinedActual.Contains));
+		}
+
 
 		[Test]
 		public async Task EnlistedItemsShowsCorrectCount()
@@ -186,11 +219,11 @@ namespace S3.AutoBatcher.UnitTests
 			{
 				await context.Sut.Add(value, token);
 				Thread.Sleep(10);
-				Assert.IsEmpty(context.ExecutedRequests);
+				Assert.IsEmpty(context.ExecutedChunks);
 				await context.Sut.AddingItemsToBatchCompleted(token);
 			}
 
-			Assert.IsTrue(context.ExecutedRequests.Single() == value);
+			Assert.IsTrue(context.ExecutedChunks.Single().Single() == value);
 		}
 	}
 }
