@@ -91,12 +91,13 @@ jobs:
         echo "CommitsSinceVersionSourcePadded: ${{ steps.gitversion.outputs.CommitsSinceVersionSourcePadded }}"
         echo "CommitDate: ${{ steps.gitversion.outputs.CommitDate }}"
     
+
     - name: Update project version
       uses: roryprimrose/set-vs-sdk-project-version@v1
       with:
-        version: "${{steps.gitversion.outputs.Major}}.${{steps.gitversion.outputs.Minor}}.${{steps.gitversion.outputs.BuildMetaData}}"
-        assemblyVersion: "${{steps.gitversion.outputs.Major}}.${{steps.gitversion.outputs.Minor}}.${{steps.gitversion.outputs.BuildMetaData}}.0"
-        fileVersion: "${{steps.gitversion.outputs.Major}}.${{steps.gitversion.outputs.Minor}}.${{steps.gitversion.outputs.BuildMetaData}}"
+        version: "${{steps.gitversion.outputs.Major}}.${{steps.gitversion.outputs.Minor}}.${{github.run_number}}"
+        assemblyVersion: "${{steps.gitversion.outputs.Major}}.${{steps.gitversion.outputs.Minor}}.${{github.run_number}}.0"
+        fileVersion: "${{steps.gitversion.outputs.Major}}.${{steps.gitversion.outputs.Minor}}.${{github.run_number}}"
       if: ${{ github.event_name != 'pull_request' && github.ref!='refs/heads/master' && (steps.gitversion.outputs.Major>0 || steps.gitversion.outputs.Minor>0) }}
 
     - name: Install dependencies
