@@ -25,7 +25,7 @@ S3.Autobatcher is an utility to process **"chunks of items"** of an specified si
 
 # QuickStart
 
-Simplest possible example of publishing `int` items  to the `Batch` :
+Simplest possible example of publishing `int` items  to the `Batch`.  :
 
 ```csharp
     ...
@@ -54,7 +54,7 @@ Simplest possible example of publishing `int` items  to the `Batch` :
     ...
 ```
 
-Simplest possible example of a processor of batch chunks:
+Simplest possible example of a processor of batch chunks where you can define the payload to execute for each chunk: send request, compute,...
 
 ```csharp
 	class BatchChunkProcessor : IBatchChunkProcessor<int>
