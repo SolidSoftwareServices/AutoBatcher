@@ -10,6 +10,7 @@ namespace S3.AutoBatcher
 {
 	public sealed class Batch<TBatchItem>: IBatch<TBatchItem> where TBatchItem : class
 	{
+		private readonly IBatchChunkProcessor<TBatchItem> _batchChunkProcessor;
 		public string Id { get; }
 		public TimeSpan EnlistAwaitTimeout { get; }
 		private readonly HashSet<BatchAggregatorToken<TBatchItem>> _currentBatchAggregators =
@@ -21,11 +22,13 @@ namespace S3.AutoBatcher
 		private ConcurrentBag<TBatchItem> _items=new ConcurrentBag<TBatchItem>();
 
 		public BatchStatus Status { get; private set; } = BatchStatus.Opened;
-		public Batch(BatchConfiguration<TBatchItem> configuration)
+		public Batch(BatchConfiguration<TBatchItem> configuration, IBatchChunkProcessor<TBatchItem> batchChunkProcessor)
 		{
+			if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 			Id = configuration.Identifier;
 			EnlistAwaitTimeout = configuration.AddMoreItemsTimeWindow;
-			_onExecute = configuration.OnExecuteBatchHandler;
+			_batchChunkProcessor = batchChunkProcessor ?? throw new ArgumentNullException(nameof(batchChunkProcessor));
+
 		}
 		private Guid _lastOperation = Guid.NewGuid();
 
@@ -58,7 +61,6 @@ namespace S3.AutoBatcher
 		}
 
 
-		private readonly Func<IReadOnlyCollection<TBatchItem>, CancellationToken, Task> _onExecute;
 
 		public async Task AddingItemsToBatchCompleted(BatchAggregatorToken<TBatchItem> token)
 		{
@@ -77,7 +79,7 @@ namespace S3.AutoBatcher
 				if (executeBatch)
 				{
 					Status = BatchStatus.Executing;
-					awaitForTask = _onExecute(_items, _cts.Token);
+					awaitForTask = _batchChunkProcessor.Process(_items, _cts.Token);
 
 				}
 				else
