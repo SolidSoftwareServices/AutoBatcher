@@ -8,40 +8,39 @@ namespace S3.AutoBatcher.UnitTests
 {
 	public partial class BatchTests
 	{
-		private class TestContext
+		private class TestContext:IBatchChunkProcessor<string>
 		{
 			public readonly AutoResetEvent BatchExecutedEvent = new AutoResetEvent(false);
 
 			private TimeSpan _enlistAwaitTimeout = TimeSpan.FromMilliseconds(125);
 			private Batch<string> _sut;
 
-			public int ExecutionCount;
 
 
 			public ConcurrentBag<string> ExecutedRequests { get; } = new ConcurrentBag<string>();
 			public Batch<string> Sut => _sut ??= BuildSut();
 
-			private Task OnExecute(IReadOnlyCollection<string> items, CancellationToken cancellationToken)
-			{
-				foreach (var request in items) ExecutedRequests.Add(request);
-				Interlocked.Increment(ref ExecutionCount);
-
-				BatchExecutedEvent.Set();
-				return Task.CompletedTask;
-			}
 
 			private Batch<string> BuildSut()
 			{
-				return new Batch<string>(new BatchConfiguration<string>(OnExecute)
+				return new Batch<string>(new BatchConfiguration<string>
 				{
 					AddMoreItemsTimeWindow = _enlistAwaitTimeout
-				});
+				},this);
 			}
 
 			public TestContext SetEnlistAwait(TimeSpan timeout)
 			{
 				_enlistAwaitTimeout = timeout;
 				return this;
+			}
+
+			public Task Process(IReadOnlyCollection<string> chunkItems, CancellationToken cancellationToken)
+			{
+				foreach (var request in chunkItems) ExecutedRequests.Add(request);
+
+				BatchExecutedEvent.Set();
+				return Task.CompletedTask;
 			}
 		}
 

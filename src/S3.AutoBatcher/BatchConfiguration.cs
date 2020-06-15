@@ -1,16 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace S3.AutoBatcher
 {
 	public class BatchConfiguration<TBatchItem>
 	{
-		public BatchConfiguration(Func<IReadOnlyCollection<TBatchItem>, CancellationToken, Task> onExecuteBatchHandler)
-		{
-			OnExecuteBatchHandler = onExecuteBatchHandler;
-		}
+		
 
 		/// <summary>
 		/// Get or sets the batch unique id
@@ -22,7 +16,5 @@ namespace S3.AutoBatcher
 		public TimeSpan AddMoreItemsTimeWindow { get; set; } = TimeSpan.Zero;
 
 		
-
-		public Func<IReadOnlyCollection<TBatchItem>, CancellationToken, Task> OnExecuteBatchHandler { get;  }
 	}
 }
