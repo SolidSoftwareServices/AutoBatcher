@@ -31,7 +31,7 @@ YOU need to PRESS Ctrl+C to stop adding items";
 			//Create batch
 			var batchCollector = new Batch<int>(batchConfiguration, new BatchChunkProcessor());
 
-			//obtain a batch token that allows aggregation of items to the batch, there can be more than one concurrent aggregators. Not represented in this example 
+			//obtain a producer token that allows aggregation of items to the batch, there can be more than one concurrent aggregators. Not represented in this example 
 			//new aggregator
 			using (var token = await batchCollector.NewBatchAggregatorToken())
 			{
