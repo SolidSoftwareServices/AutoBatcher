@@ -28,9 +28,13 @@ namespace S3.AutoBatcher
 			if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 			Id = configuration.Identifier;
 			EnlistAwaitTimeout = configuration.AddMoreItemsTimeWindow;
+			ChunkSize = configuration.ChunkSize;
 			_batchChunkProcessor = batchChunkProcessor ?? throw new ArgumentNullException(nameof(batchChunkProcessor));
 
 		}
+
+		public int ChunkSize { get; set; }
+
 		private Guid _lastOperation = Guid.NewGuid();
 
 		public async Task Add(TBatchItem item,BatchAggregatorToken<TBatchItem> token, bool willAddMoreItemsWithThisToken = true)
@@ -40,9 +44,13 @@ namespace S3.AutoBatcher
 			
 			_items.Add(item);
 			_lastOperation = Guid.NewGuid();
-			if (!willAddMoreItemsWithThisToken)
+			if (!willAddMoreItemsWithThisToken )
 			{
-				await AddingItemsToBatchCompleted(token);
+				await CompleteChunk(token,false);
+			}
+			else if (ChunkSize > 0 && _items.Count >= ChunkSize)
+			{
+				await CompleteChunk(token, true);
 			}
 		}
 
@@ -69,37 +77,55 @@ namespace S3.AutoBatcher
 
 		public async Task AddingItemsToBatchCompleted(BatchAggregatorToken<TBatchItem> token)
 		{
+			await CompleteChunk(token,false);
+		}
+
+		private async Task CompleteChunk(BatchAggregatorToken<TBatchItem> token,bool chunkLimitReachedTriggers)
+		{
 			await AwaitEnlistersUntilNoMoreEnlist();
 
-			bool executeBatch;
 			Task awaitForTask;
-			
+
 			lock (_syncLock)
 			{
 				ThrowIfInvalidToken(token);
 
-				_currentBatchAggregators.Remove(token);
-				executeBatch = !_currentBatchAggregators.Any();
+				if (!chunkLimitReachedTriggers)
+				{
+					_currentBatchAggregators.Remove(token);
+				}
+
+				var executeBatch = chunkLimitReachedTriggers || !_currentBatchAggregators.Any();
 				if (executeBatch)
 				{
 					_allowItemsEvent.Reset();
 					Status = BatchStatus.Executing;
-					awaitForTask = _batchChunkProcessor.Process(_items, _cts.Token);
+					var batchItems = _items.ToArray();
+					TBatchItem[] itemsToProcess;
+					var itemsToKeep = new TBatchItem[0];
+					if (ChunkSize == 0)
+					{
+						itemsToProcess = batchItems;
+					}
+					else
+					{
+						itemsToProcess = batchItems.Take(ChunkSize).ToArray();
+						itemsToKeep = batchItems.Skip(ChunkSize).ToArray();
+					}
 
+					awaitForTask = _batchChunkProcessor.Process(itemsToProcess, _cts.Token);
+					//immediately allow new additions
+					_items = new ConcurrentBag<TBatchItem>(itemsToKeep);
+					Status = BatchStatus.Opened;
+					_allowItemsEvent.Set();
+					_resetEvent.Set();
+					_resetEvent.Reset();
 				}
 				else
 					awaitForTask = _resetEvent.WaitAsync(_cts.Token);
 			}
-			
+
 			await awaitForTask;
-			if (executeBatch)
-			{
-				_items=new ConcurrentBag<TBatchItem>();
-				Status = BatchStatus.Opened;
-				_allowItemsEvent.Set();
-				_resetEvent.Set();
-				_resetEvent.Reset();
-			}
 
 			async Task AwaitEnlistersUntilNoMoreEnlist()
 			{
@@ -112,8 +138,6 @@ namespace S3.AutoBatcher
 					current = _lastOperation;
 					await Task.Delay(EnlistAwaitTimeout);
 				}
-
-
 			}
 		}
 
