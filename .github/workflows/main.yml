@@ -1,4 +1,4 @@
-name: AutoBatcher
+name: main
 env:
   solutionFile: 'S3.AutoBatcher.sln'
 on:
