@@ -17,7 +17,7 @@ namespace S3.AutoBatcher.Samples.SimpleProducer
 		public Task Process(IReadOnlyCollection<int> chunkItems, CancellationToken cancellationToken)
 		{
 			Console.WriteLine($"Batch #{++_batchNumber}, items processed:",Color.DarkGreen);
-			//prints hte items comma-separated
+			//prints the items comma-separated
 			var current = string.Join(',', chunkItems);
 			Console.WriteLine(current,Color.Olive);
 			return Task.CompletedTask;
