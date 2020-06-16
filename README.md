@@ -1,8 +1,6 @@
 # S3.Autobatcher
 
-<img src="https://github.com/SolidSoftwareServices/AutoBatcher/blob/master/docs/images/logo.png" width="200" height="200"/>
-
-[![NuGet version](https://buildstats.info/nuget/s3.autobatcher?includeprereleases=false)](http://www.nuget.org/packages/s3.autobatcher)
+<img src="https://github.com/SolidSoftwareServices/AutoBatcher/blob/master/docs/images/logo.png" width="200" height="200"/>[![NuGet version](https://buildstats.info/nuget/s3.autobatcher?includeprereleases=false)](http://www.nuget.org/packages/s3.autobatcher)
 ![](https://github.com/SolidSoftwareServices/AutoBatcher/workflows/main/badge.svg)
 
 S3.Autobatcher is an utility to process **"chunks of items"** of an specified size from one or more **"item producers"**.
