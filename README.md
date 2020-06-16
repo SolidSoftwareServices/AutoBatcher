@@ -1,3 +1,4 @@
+![](https://github.com/SolidSoftwareServices/AutoBatcher/blob/master/docs/images/logo.png)
 # S3.Autobatcher
 
 [![NuGet version](https://buildstats.info/nuget/s3.autobatcher?includeprereleases=false)](http://www.nuget.org/packages/s3.autobatcher)
