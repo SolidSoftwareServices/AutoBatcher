@@ -1,5 +1,6 @@
-<img src="https://github.com/SolidSoftwareServices/AutoBatcher/blob/master/docs/images/logo.png" width="200" height="200"/>
 # S3.Autobatcher
+
+<img src="https://github.com/SolidSoftwareServices/AutoBatcher/blob/master/docs/images/logo.png" width="200" height="200"/>
 
 [![NuGet version](https://buildstats.info/nuget/s3.autobatcher?includeprereleases=false)](http://www.nuget.org/packages/s3.autobatcher)
 ![](https://github.com/SolidSoftwareServices/AutoBatcher/workflows/main/badge.svg)
