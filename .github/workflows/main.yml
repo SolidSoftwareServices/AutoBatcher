@@ -115,9 +115,11 @@ jobs:
 
     - name: Publish coverage report to coveralls.io
       uses: coverallsapp/github-action@v1.0.1
+      
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ./TestResults/coverage.info   
+        path-to-lcov: ./src/TestResults/coverage.info   
+      
         
     - name: Generate nuget package
       run: dotnet pack S3.AutoBatcher.csproj --configuration Release -o nupkg
