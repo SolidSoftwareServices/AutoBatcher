@@ -184,7 +184,9 @@ namespace S3.AutoBatcher.UnitTests
 
 				await context.Sut.AddingItemsToBatchCompleted(token);
 			}
-			Assert.AreEqual(batchSize==0?1:(int)Math.Ceiling((numItemsToPublish / (double)batchSize)),context.ExecutedChunks.Count);
+
+			var expectedChunks = batchSize==0?1:(int)Math.Ceiling((numItemsToPublish / (double)batchSize));
+			Assert.AreEqual(expectedChunks,context.ExecutedChunks.Count);
 
 
 			var joinedActual = context.ExecutedChunks.SelectMany(x=>x).ToArray();
