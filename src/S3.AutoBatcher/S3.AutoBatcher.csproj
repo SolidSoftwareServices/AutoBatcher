@@ -19,12 +19,7 @@
 	</PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ILRepack.MSBuild.Task" Version="2.0.13" PrivateAssets="All" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\S3\S3.csproj">
-      <PrivateAssets>All</PrivateAssets>
-    </ProjectReference>
+    <PackageReference Include="S3.Threading" Version="2020.0.8" />
   </ItemGroup>
 	<Target Name="ILRepack" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
 		<PropertyGroup>
