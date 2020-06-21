@@ -5,15 +5,17 @@
 [![NuGet version](https://buildstats.info/nuget/s3.autobatcher?includeprereleases=false)](http://www.nuget.org/packages/s3.autobatcher)
 ![](https://github.com/SolidSoftwareServices/AutoBatcher/workflows/main/badge.svg)[![Coverage Status](https://coveralls.io/repos/github/SolidSoftwareServices/AutoBatcher/badge.svg?branch=master)](https://coveralls.io/github/SolidSoftwareServices/AutoBatcher?branch=master) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/SolidSoftwareServices/AutoBatcher/blob/master/LICENSE)
 
+
+### Description 
 S3.Autobatcher is an utility to process **"chunks of items"** of an specified size from one or more **"item producers"**.
 Its was conceived for scenarios where its needed to collect items from multiplesources and then aggregate/or or compose a single aggregate that is payloaded toghether.
 
  
 
 ### Features
-* Collect items from producers and encapsulates the logic to process them
+* Collect items from producers and encapsulates the logic to process them together
 * Process all the items in a single chunk or auto-chunk the batch when sizes are being reached without blocking the producers
-* Supported concurrent producers
+* Produce the items concurrently 
 
 
 ### Concepts
