@@ -28,6 +28,7 @@ Its was conceived for scenarios where its needed to collect items from multiples
 * *Working samples* in the repository
 * *Unit tests* in the repository
 
+
 # QuickStart
 
 #### Adding int items into a batch
