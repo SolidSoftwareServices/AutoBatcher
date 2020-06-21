@@ -28,51 +28,71 @@ Its was conceived for scenarios where its needed to collect items from multiples
 
 # QuickStart
 
+#### Adding int items into a batch
+
 Simplest possible example of publishing `int` items  to the `Batch`.  :
 
 ```csharp
-    ...
-    //batch configuration
-	var batchConfiguration = new BatchConfiguration<int>
+...
+//batch configuration
+var batchConfiguration = new BatchConfiguration<int>
+{
+	//Time window before the current batch chuck collected is executed
+	AddMoreItemsTimeWindow = TimeSpan.FromSeconds(3.0)
+};
+//Create batch
+var batchCollector = new Batch<int>(batchConfiguration, new BatchChunkProcessor());
+
+//obtain a producer token that allows aggregation of items to the batch, there can be more than one concurrent aggregators. Not represented in this example 
+//new aggregator
+using (var token = await batchCollector.NewBatchAggregatorToken())
+{
+	//add items until the user cancels
+	while (!_cancellationTokenSource.Token.IsCancellationRequested)
 	{
-	    //Time window before the current batch chuck collected is executed
-		AddMoreItemsTimeWindow = TimeSpan.FromSeconds(3.0)
-	};
-    //Create batch
-    var batchCollector = new Batch<int>(batchConfiguration, new BatchChunkProcessor());
-
-    //obtain a producer token that allows aggregation of items to the batch, there can be more than one concurrent aggregators. Not represented in this example 
-    //new aggregator
-    using (var token = await batchCollector.NewBatchAggregatorToken())
-    {
-        //add items until the user cancels
-        while (!_cancellationTokenSource.Token.IsCancellationRequested)
-        {
-           	var item = rnd.Next(0, 25);
-			await batchCollector.Add(item, token);
-        }
-        //notify the batch that this aggregator is done adding items
-        await batchCollector.AddingItemsToBatchCompleted(token);
-    }
-    ...
+		var item = rnd.Next(0, 25);
+		await batchCollector.Add(item, token);
+	}
+	//notify the batch that this aggregator is done adding items
+	await batchCollector.AddingItemsToBatchCompleted(token);
+}
+...
 ```
-
-Simplest possible example of a processor of batch chunks where you can define the payload to execute for each chunk: send request, compute,...
+#### processing a batch
+Here is a simple example of a processor of batch chunks where you can define the payload to execute for each chunk: send request, compute,...
 
 ```csharp
-	class BatchChunkProcessor : IBatchChunkProcessor<int>
+class BatchChunkProcessor : IBatchChunkProcessor<int>
+{
+	private int _batchNumber = 0;
+	public Task Process(IReadOnlyCollection<int> chunkItems, CancellationToken cancellationToken)
 	{
-		private int _batchNumber = 0;
-		public Task Process(IReadOnlyCollection<int> chunkItems, CancellationToken cancellationToken)
-		{
-			Console.WriteLine($"Batch #{++_batchNumber}, items processed:",Color.DarkGreen);
-			//this example prints the items comma-separated
-			var current = string.Join(',', chunkItems);
-			Console.WriteLine(current,Color.Olive);
-			return Task.CompletedTask;
-		}
+		Console.WriteLine($"Batch #{++_batchNumber}, items processed:",Color.DarkGreen);
+		//prints the items comma-separated
+		var current = string.Join(',', chunkItems);
+		Console.WriteLine(current,Color.Olive);
+		return Task.CompletedTask;
+	}
+
+	public ErrorResult HandleError(IReadOnlyCollection<int> chunkItems, Exception exception, int currentAttemptNumber)
+	{
+		//rethrow;
+		return ErrorResult.AbortAndRethrow;
+
+		//here aer other compensation options commented 
+
+		//explore other options here, like store for later execution,... 
+		//_failedItems.Add(chunkItems);
+		//return ErrorResult.Continue;
+
+		// or retry, together with the parameter currentAttemptNumber
+		//return ErrorResult.Retry;
+	}
 }
 ```
+
+
+
 ## License ##
 
 S3.Autobatcher is Open Source software and is released under the [MIT license](https://github.com/SolidSoftwareServices/AutoBatcher/wiki/License).

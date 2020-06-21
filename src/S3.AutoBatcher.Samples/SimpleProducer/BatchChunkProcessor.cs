@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
-using Colorful;
+using Console = Colorful.Console;
 
 namespace S3.AutoBatcher.Samples.SimpleProducer
 {
@@ -21,6 +22,21 @@ namespace S3.AutoBatcher.Samples.SimpleProducer
 			var current = string.Join(',', chunkItems);
 			Console.WriteLine(current,Color.Olive);
 			return Task.CompletedTask;
+		}
+
+		public ErrorResult HandleError(IReadOnlyCollection<int> chunkItems, Exception exception, int currentAttemptNumber)
+		{
+			//rethrow;
+			return ErrorResult.AbortAndRethrow;
+
+			//compensate
+
+			//explore other options here, like store for later execution,... 
+			//_failedItems.Add(chunkItems);
+			//return ErrorResult.Continue;
+
+			// or retry, together with the parameter currentAttemptNumber
+			//return ErrorResult.Retry;
 		}
 	}
 }

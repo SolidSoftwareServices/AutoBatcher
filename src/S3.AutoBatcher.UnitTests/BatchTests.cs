@@ -15,19 +15,86 @@ namespace S3.AutoBatcher.UnitTests
 		
 
 		[Test]
-		public async Task CanAddItem()
+		public async Task CanAddItems([Range(0,3)]int numItems)
 		{
 			var context = new TestContext();
-			var value = Guid.NewGuid().ToString();
+			
+			var expected=new List<string>();
 			using (var token =  await context.Sut.NewBatchAggregatorToken())
 			{
-				await context.Sut.Add(value, token);
-				Thread.Sleep(10);
-				Assert.IsEmpty(context.ExecutedChunks);
+				for (var i = 0; i < numItems; i++)
+				{
+					var value = Guid.NewGuid().ToString();
+					expected.Add(value);
+					await context.Sut.Add(value, token);
+					Thread.Sleep(10);
+					Assert.IsEmpty(context.ExecutedChunks);
+				}
+
 				await context.Sut.AddingItemsToBatchCompleted(token);
-				Assert.IsTrue(context.ExecutedChunks.Single().Single() == value);
+				
+			}
+
+			if (numItems > 0)
+			{
+				CollectionAssert.AreEqual(expected,context.ExecutedChunks.SingleOrDefault());
+			}
+			else
+			{
+				CollectionAssert.IsEmpty(context.ExecutedChunks);
 			}
 		}
+		[Test,Theory]
+		public async Task CanHandleErrors(ErrorResult errorResult,[Range(0,1)]int numberOfFailuresOnRetry)
+		{
+			var context = new TestContext()
+				.WithBatchSize(1)
+				.FailingOnBatchNumber(1,errorResult,  numberOfFailuresOnRetry);
+
+			var expected = new List<string>();
+			using (var token = await context.Sut.NewBatchAggregatorToken())
+			{
+				for (var i = 0; i < 10; i++)
+				{
+					var value = Guid.NewGuid().ToString();
+					expected.Add(value);
+					var t = token;
+
+					async Task Add()
+					{
+						await context.Sut.Add(value, t);
+					}
+
+					if (errorResult == ErrorResult.AbortAndRethrow)
+					{
+						Assert.ThrowsAsync<Exception>(Add);
+						Assert.IsEmpty(context.ExecutedChunks);
+						return;
+					}
+					else
+					{
+						await Add();
+					}
+				}
+
+				await context.Sut.AddingItemsToBatchCompleted(token);
+			}
+
+			switch(errorResult)
+			{
+				case ErrorResult.Retry:
+					CollectionAssert.AreEqual(expected, context.ExecutedChunks.SelectMany(x=>x));
+					break;
+				case ErrorResult.Continue:
+					CollectionAssert.AreEqual(expected.Skip(1), context.ExecutedChunks.SelectMany(x => x));
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(errorResult), errorResult, null);
+			}
+
+		}
+
+
 
 		[Test]
 		public async Task CanAggregateFromSeveralAggregators()
@@ -97,6 +164,7 @@ namespace S3.AutoBatcher.UnitTests
 				if (faultedTask != null) throw faultedTask.Exception?.InnerException;
 			}
 		}
+		
 
 
 		[Test]
@@ -167,7 +235,7 @@ namespace S3.AutoBatcher.UnitTests
 		[TestCase(50, 0)]
 		[TestCase(50,10)]
 		[TestCase(52, 10)]
-		public async Task CanAutoProcessBatchChunk(int numItemsToPublish,int batchSize)
+		public async Task CanAutoProcessBatchChunkWhenSizeReached(int numItemsToPublish,int batchSize)
 		{
 			
 			var context = new TestContext().WithBatchSize(batchSize);
